@@ -1,0 +1,104 @@
+# Reproducible Research: Peer Assessment 1
+
+
+## Loading and preprocessing the data
+```{r}
+setwd("c:\\data")
+activity <- read.csv("activity.csv")
+```
+
+## What is mean total number of steps taken per day?
+```{r}
+stepsMean <- tapply(activity$steps,activity$date,mean,na.rm=TRUE)
+stepsMedian <- tapply(activity$steps,activity$date,median,na.rm=TRUE)
+stepsSum <- tapply(activity$steps,activity$date,sum,na.rm=TRUE)
+
+#Daily Means
+print(stepsMean)
+
+#Daily Medians
+print(stepsMedian)
+
+#Overall mean
+print(mean(stepsSum))
+
+#Ovverall median
+print(median(stepsSum))
+
+#Histogram
+hist(stepsSum,breaks=15, main = "Total steps by day", xlab = "day")
+
+```
+
+
+## What is the average daily activity pattern?
+```{r}
+time_series <- tapply(activity$steps, activity$interval, mean, na.rm = TRUE)
+ts.plot(time_series)
+```
+
+
+## Imputing missing values
+```{r}
+
+StepsAverage <- aggregate(steps ~ interval, data = activity, FUN = mean)
+fillNA <- numeric()
+for (i in 1:nrow(activity)) {
+    obs <- activity[i, ]
+    if (is.na(obs$steps)) {
+        steps <- subset(StepsAverage, interval == obs$interval)$steps
+    } else {
+        steps <- obs$steps
+    }
+    fillNA <- c(fillNA, steps)
+}
+activity$steps <- fillNA
+#New daily means and medians
+
+stepsMean2 <- tapply(activity$steps,activity$date,mean,na.rm=TRUE)
+stepsMedian2 <- tapply(activity$steps,activity$date,median,na.rm=TRUE)
+stepsSum2 <- tapply(activity$steps,activity$date,sum,na.rm=TRUE)
+
+
+#Daily Means
+print(stepsMean2)
+
+#Daily Medians
+print(stepsMedian2)
+
+#Overall mean
+print(mean(stepsSum2))
+
+#Overall median
+print(median(stepsSum2))
+
+
+```
+
+
+## Are there differences in activity patterns between weekdays and weekends?
+
+
+```{r}
+activity$date <- as.Date(activity$date,"%Y-%m-%d")
+
+avgStepInt <- aggregate(activity$steps,activity[3],mean,na.rm=TRUE)
+merged_temp <- merge(x=activity,y=avgStepInt,by="interval",all.x=TRUE)
+merged_temp$steps <- ifelse(is.na(merged_temp$steps),round(merged_temp$x,digits=2),merged_temp$steps)
+
+factor <- merged_temp[,-c(4)]
+factor$flag <- as.factor(ifelse(weekdays(factor$date) %in% c("Saturday","Sunday"),"Weekend","Weekdays"))
+head(factor)
+
+plot_temp <- aggregate(factor$steps,factor[c(1,4)],mean)
+
+library(lattice)
+xyplot(x ~ interval | flag,data = plot_temp,layout=c(1,2),type = "l",xlab = "Interval",ylab = "Number of steps")
+```
+
+
+```{r, include=FALSE}
+   # add this chunk to end of mycode.rmd
+   file.rename(from="PA_template.md", 
+               to="README.md")
+```
